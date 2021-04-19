@@ -101,5 +101,19 @@ void send_serial_0_str(const char * str) {
     for (const char *pc = str; *pc; pc++) {
         send_serial_0((uint8_t)*pc);
     }
-    _delay_ms(2);
+    _delay_ms(0);
+}
+
+static char nybble_to_hex(uint8_t nybble) {
+    if (nybble < 10) {
+        return '0' + nybble;
+    } else {
+        return 'a' + (nybble - 10);
+    }
+}
+
+void uint8_to_string(uint8_t value, char * str) {
+    *str++ = nybble_to_hex((value & 0x00f0) >> 4);
+    *str++ = nybble_to_hex((value & 0x000f) >> 0);
+    *str++ = 0;
 }

@@ -28,11 +28,40 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 extern "C" {
 #endif
 
+/**
+ * \brief Initialise serial port 0
+ *
+ * This function initialises serial port 0 for 9600bps 8N1. It is for
+ * debugging.
+ */
 void init_serial_0();
 
+/**
+ * \brief Send a single character to the serial port
+ *
+ * \param c the character
+ */
 void send_serial_0(uint8_t c);
 
+/**
+ * \brief Sends a string to the serial port
+ *
+ * \param str the string
+ */
 void send_serial_0_str(const char * str);
+
+/**
+ * \brief Utility function that converts a uint8_t value to a hex string
+ *
+ * This function populates the supplied buffer with the ASCII hex
+ * representation of the supplied value. The buffer must be large enough
+ * to hold two characters and a terminating NUL byte, i.e. 3 characters
+ * long.
+ *
+ * \param value the value
+ * \param str the string buffer
+ */
+void uint8_to_string(uint8_t value, char * str);
 
 #ifdef __cplusplus
 }

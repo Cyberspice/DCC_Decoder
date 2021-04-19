@@ -22,24 +22,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/atomic.h>
-#include "dcc.h"
+#include "dccrx.h"
 
 #define ICP1 PINB0
-
-/* The time for a tick after prescaled */
-#define TICK_US 1/2
-
-/* Per NMRA standards */
-#define BIT1_WIDTH_MIN_US  52
-#define BIT1_WIDTH_MAX_US  62
-#define BIT0_WIDTH_MIN_US  90
-#define BIT0_WIDTH_MAX_US  10000
-
-/* The ticks */
-#define BIT1_WIDTH_MIN_TICKS   104
-#define BIT1_WIDTH_MAX_TICKS   124
-#define BIT0_WIDTH_MIN_TICKS   180
-#define BIT0_WIDTH_MAX_TICKS 20000
 
 typedef enum {
     DCC_BIT_TYPE_UNKNOWN,
@@ -53,14 +38,6 @@ typedef enum {
     DCC_BIT_STATE_COMPLETE
 } DCC_BIT_STATE;
 
-typedef enum {
-    DCC_PACKET_STATE_UNKNOWN,
-    DCC_PACKET_STATE_PREAMBLE,
-    DCC_PACKET_STATE_START_BIT,
-    DCC_PACKET_STATE_DATA_BIT,
-    DCC_PACKET_STATE_END_BIT,
-    DCC_PACKET_STATE_DONE
-} DCC_PACKET_STATE;
 
 #define MIN_PREAMBLE_BIT_COUNT 12
 
@@ -71,10 +48,10 @@ static volatile DCC_PACKET_STATE packet_state = DCC_PACKET_STATE_UNKNOWN;
 static volatile uint8_t preamble_count = 0;
 static volatile uint8_t packet_byte = 0;
 static volatile uint8_t packet_byte_mask = 0x80;
+static volatile uint8_t packet_idx = 0;
 
-uint8_t packet_data[MAX_PACKET_LEN];
-volatile int packet_idx = 0;
-volatile bool got_packet = false;
+uint8_t packet_data[DCC_MAX_PACKET_LEN];
+volatile uint8_t packet_len = 0;
 
 static inline void reset_states(void) {
     bit_start_edge = true;
@@ -82,7 +59,7 @@ static inline void reset_states(void) {
     bit_state = DCC_BIT_STATE_UNKNOWN;
     packet_state = DCC_PACKET_STATE_UNKNOWN;
     packet_idx = 0;
-    got_packet = false;
+    packet_len = 0;
 }
 
 static inline bool process_bit(bool bit_is_1) {
@@ -125,7 +102,10 @@ static inline bool process_bit(bool bit_is_1) {
 
                 // Disable interrupts
                 TIMSK1 = 0;
-                got_packet = true;
+
+                // Set packet length
+                packet_len = packet_idx;
+
                 return true;
             } else {
                 if (packet_state != DCC_PACKET_STATE_END_BIT) {
@@ -154,7 +134,7 @@ static inline bool process_bit(bool bit_is_1) {
                 packet_data[packet_idx] = packet_byte;
                 packet_idx ++;
 
-                if (packet_idx >= MAX_PACKET_LEN) {
+                if (packet_idx >= DCC_MAX_PACKET_LEN) {
                     /* End of packet then we want the stop bit */
                     packet_state = DCC_PACKET_STATE_END_BIT;
                 } else {
@@ -264,7 +244,7 @@ ISR (TIMER1_OVF_vect) {
     reset_states();
 }
 
-void init_icp1() {
+void dccrx_init(void) {
     /* Normal mode */
     TCCR1A = 0;
 
@@ -277,7 +257,19 @@ void init_icp1() {
     /* Normal mode */
     TCCR1C = 0;
 
+    /* No interrupts */
+    TIMSK1 = 0;
+
+    /* Set up the port */
+    PORTB = PORTB | _BV(ICP1);
+    DDRB = DDRB & ~_BV(ICP1);
+}
+
+void dccrx_start(void) {
+    /* For debug */
     PORTB = PORTB | _BV(PB2);
+
+    /* Reset the state machine */
     reset_states();
 
     /* Enable ICP1 interrupt and overflow interrupt */
@@ -285,8 +277,18 @@ void init_icp1() {
 
     /* Initialise the counter to 0 */
     TCNT1 = 0;
+}
 
-    /* Set up the port */
-    PORTB = PORTB | _BV(ICP1);
-    DDRB = DDRB & ~_BV(ICP1);
+void dccrx_stop(void) {
+    /* Just disable the interrupts */
+    TIMSK1 = 0;
+}
+
+bool dccrx_isvalid(uint8_t data[], uint8_t len) {
+    uint8_t sum = 0;
+    for (uint8_t i = 0; i < len - 1; i++) {
+        sum = sum ^ data[i];
+    }
+
+    return (sum == data[len - 1]);
 }

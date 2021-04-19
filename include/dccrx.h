@@ -19,10 +19,11 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef __DCC_H
-#define __DCC_H
+#ifndef __DCCRX_H
+#define __DCCRX_H
 
 #include <stdint.h>
+#include "dcc_common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,12 +31,47 @@ extern "C" {
 
 #define ICP1_DEBUG
 
-#define MAX_PACKET_LEN 6
+/** The packet data */
 extern uint8_t packet_data[];
-extern volatile int packet_idx;
-extern volatile bool got_packet;
 
-void init_icp1();
+/** The packet length. This is set at the end of the packet */
+extern volatile uint8_t packet_len;
+
+/**
+ * \brief Initialise DCC reading.
+ *
+ * Set up the registers ready for read DCC. Does not start the
+ * actual reading process.
+ */
+void dccrx_init(void);
+
+/**
+ * \brief Start reading DCC.
+ *
+ * Reads DCC from the input capture port. A packet is read when
+ * packet_len is no zero in which case packet_data contains the
+ * packet. Error checking will not have already taken place. Use
+ * dccrx_isvalid() to check the packet validity.
+ */
+void dccrx_start(void);
+
+/**
+ * \brief Stop reading DCC.
+ *
+ * Stops the DCC packet reading process resetting the internal
+ * state machine.
+ */
+void dccrx_stop(void);
+
+/**
+ * \brief tests the validity of a packet
+ *
+ * \param data the packet data
+ * \param len the packet len
+ *
+ * \return true if valid
+ */
+bool dccrx_isvalid(uint8_t data[], uint8_t len);
 
 #ifdef __cplusplus
 }

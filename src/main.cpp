@@ -29,23 +29,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "serialtx.h"
 #include "heartbeat.h"
 
-#include "dcc.h"
-
-static char nybbleToHex(uint16_t nybble) {
-    if (nybble < 10) {
-        return '0' + nybble;
-    } else {
-        return 'a' + (nybble - 10);
-    }
-}
-
-static void uint16ToString(uint16_t value, char * str) {
-    *str++ = nybbleToHex((value & 0xf000) >> 12);
-    *str++ = nybbleToHex((value & 0x0f00) >> 8);
-    *str++ = nybbleToHex((value & 0x00f0) >> 4);
-    *str++ = nybbleToHex((value & 0x000f) >> 0);
-    *str++ = 0;
-}
+#include "dccrx.h"
 
 static void init_diag_led(void) {
     DDRB = DDRB | _BV(DDB2);
@@ -56,26 +40,63 @@ void setup() {
     init_builtin_led();
     init_timer_0();
     init_serial_0();
-    init_icp1();
+    dccrx_init();
     init_diag_led();
 
+    /* Configure sleep */
+    set_sleep_mode(SLEEP_MODE_IDLE);
+
     send_serial_0_str("DCC code 0.05\n");
+    dccrx_start();
 }
 
 char str[6];
 
-#define _NOP() do { __asm__ __volatile__ ("nop"); } while (0)
+uint8_t prev_packet[DCC_MAX_PACKET_LEN];
+uint8_t prev_packet_len = 0;
 
-void loop() {
-    if (!got_packet) return;
-    
-    for (int i = 0; i < packet_idx; i++) {
-        uint16ToString(packet_data[i], str);
+void print_packet() {
+    for (uint8_t i = 0; i < prev_packet_len; i++) {
+        uint8_to_string(prev_packet[i], str);
         send_serial_0_str(str);
         send_serial_0(' ');
     }
     send_serial_0('\n');
-    init_icp1();
+}
+
+void loop() {
+    if (packet_len > 0) {
+        bool different = false;
+
+        /* Different packet if different length or different bytes */
+        if (packet_len != prev_packet_len) {
+            different = true;
+        } else {
+            for (uint8_t i = 0; i < packet_len; i++) {
+                if (packet_data[i] != prev_packet[i]) {
+                    different = true;
+                    break;
+                }
+            }
+        }
+
+        /* Copy if different */
+        if (different) {
+            prev_packet_len = packet_len;
+            for (uint8_t i = 0; i < packet_len; i++) {
+                prev_packet[i] = packet_data[i];
+            }
+        }
+
+        /* Start collecting next one */
+        dccrx_start();
+
+        /* Print current one */
+        if (different) {
+            print_packet();
+        }
+    }
+    sleep_mode();
 }
 
 int main(void) {
