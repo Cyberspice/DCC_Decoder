@@ -24,6 +24,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <stdint.h>
 
+// Uncomment to use interrupts for serial TX.
+// #define SERIALTX_USE_INT
+
 #ifdef __cplusplus
 extern "C" {
 #endif

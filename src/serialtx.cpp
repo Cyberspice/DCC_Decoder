@@ -25,6 +25,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <util/delay.h>
 #include "serialtx.h"
 
+#ifdef SERIALTX_USE_INT
 #define CBUF_SIZE 16
 uint8_t cbuf[CBUF_SIZE];
 volatile uint8_t cbufw = 0;
@@ -47,6 +48,7 @@ ISR(USART_UDRE_vect) {
         ints = false;
     }
 }
+#endif
 
 void init_serial_0() {
     // (F_CPU / 4 / 115200 - 1) / 2 = 16
@@ -64,6 +66,7 @@ void init_serial_0() {
     UCSR0B = _BV(TXEN0);
 }
 
+#ifdef SERIALTX_USE_INT
 void send_serial_0(uint8_t c) {
     // Buffer is empty (int not enabled), just send byte
     if ((cbufw == cbufr) && bit_is_set(UCSR0A, UDRE0)) {
@@ -96,6 +99,12 @@ void send_serial_0(uint8_t c) {
         }
     }
 }
+#else
+void send_serial_0(uint8_t c) {
+    loop_until_bit_is_set(UCSR0A, UDRE0);
+    UDR0 = c;
+}
+#endif
 
 void send_serial_0_str(const char * str) {
     for (const char *pc = str; *pc; pc++) {
