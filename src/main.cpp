@@ -27,9 +27,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #include "serialtx.h"
+#include "mcp23008.h"
 #include "heartbeat.h"
 
 #include "dccrx.h"
+
+char str[6];
 
 static void init_diag_led(void) {
     DDRB = DDRB | _BV(DDB2);
@@ -42,15 +45,16 @@ void setup() {
     init_serial_0();
     dccrx_init();
     init_diag_led();
+    twowire_init();
+    mcp23008_init(0x40);
 
     /* Configure sleep */
     set_sleep_mode(SLEEP_MODE_IDLE);
 
-    send_serial_0_str("DCC code 0.05\n");
+    /* A hello */
+    send_serial_0_str("DCC code 0.06\n");
     dccrx_start();
 }
-
-char str[6];
 
 uint8_t prev_packet[DCC_MAX_PACKET_LEN];
 uint8_t prev_packet_len = 0;
