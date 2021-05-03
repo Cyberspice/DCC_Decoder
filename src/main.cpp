@@ -30,8 +30,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "serialtx.h"
 #include "mcp23008.h"
 #include "heartbeat.h"
-
 #include "dccrx.h"
+#include "cv.h"
 
 typedef enum {
     DECODER_STATE_UNKNOWN,
@@ -83,6 +83,7 @@ void setup() {
     init_heartbeat();
     init_serial_0();
     init_ack();
+    cv_init();
     dccrx_init();
     init_diag_led();
     twowire_init();
@@ -96,8 +97,6 @@ void setup() {
     send_serial_0_str("----------------\n");
     dccrx_start();
 }
-
-uint16_t dcc_addr = 1;
 
 /**
  * \brief Sends an acknowledge pulse
@@ -154,9 +153,12 @@ inline bool handle_idle() {
 /**
  * \brief Handle an accessory decoder packet
  *
+ * \param dcc_addr the decoder address
+ * \param addr_byte the address byte from the packet
+ *
  * \returns true if the packet was processed
  */
-inline bool handle_acc_packet(uint8_t addr_byte) {
+inline bool handle_acc_packet(uint16_t dcc_addr, uint8_t addr_byte) {
     uint8_t inst_byte = packet_data[1];
 
     if ((inst_byte & DCC_ACC_BASIC_PACKET_BIT) == DCC_ACC_BASIC_PACKET_BIT) {
@@ -196,15 +198,18 @@ inline bool handle_acc_packet(uint8_t addr_byte) {
 /**
  * \brief Handle an operational mode packet
  *
+ * \param dcc_addr the decoder address
+ * \param addr_byte the address byte from the packet
+ *
  * \returns true if the packet was processed
  */
-inline bool handle_oper_packet(uint8_t addr_byte) {
+inline bool handle_oper_packet(uint16_t dcc_addr, uint8_t addr_byte) {
     // Luckily the first byte of an accessory decoder packet must have the
     // top bit set which is never true for a service mode cv packet. So we
     // can tell when we have an accessory decoder packet easily
 
     if ((addr_byte & DCC_ADDRESS_ACCESSORY_MASK) == DCC_ADDRESS_ACCESSORY) {
-        return handle_acc_packet(addr_byte);
+        return handle_acc_packet(dcc_addr, addr_byte);
     } else {
         DEBUG_PRINT_PACKET("OPER:");
     }
@@ -223,63 +228,42 @@ inline bool handle_service_packet(uint8_t addr_byte) {
     // have to use as much info as possible to determine the difference,
     // i.e. packet length, other bytes in the packet and decoder mode.
 
+    uint8_t data = packet_data[2];
     if (packet_len == DCC_CV_DIRECT_MODE_LEN &&
         ((addr_byte & DCC_CV_DIRECT_MASK) == DCC_CV_DIRECT)) {
         uint16_t cv = ((uint16_t)(addr_byte & DCC_CV_DIRECT_ADDR_HIGH_MASK)) << 8;
         cv = cv | (uint16_t)(packet_data[1]);
         cv++;
 
-        uint8_t data = packet_data[2];
-
         if ((addr_byte & DCC_CV_DIRECT_MODE_MASK) == DCC_CV_DIRECT_VERIFY) {
-            send_serial_0_str("DVER:");
-            uint16_to_string(cv, str);
-            send_serial_0_str(str);
-            send_serial_0(' ');
-            uint8_to_string(data, str);
-            send_serial_0_str(str);
-            send_serial_0('\n');
-
-            if (data == 0x05) {
+            if (data == cv_read(cv)) {
                 send_ack();
             }
 
             return true;
         } else
         if ((addr_byte & DCC_CV_DIRECT_MODE_MASK) == DCC_CV_DIRECT_WRITE) {
-            send_serial_0_str("DWRT:");
-            uint16_to_string(cv, str);
-            send_serial_0_str(str);
-            send_serial_0(' ');
-            uint8_to_string(data, str);
-            send_serial_0_str(str);
-            send_serial_0('\n');
+            if (cv_write(cv, data)) {
+                send_ack();
+            }
 
             return true;
         } else
         if ((addr_byte & DCC_CV_DIRECT_MODE_MASK) == DCC_CV_DIRECT_BIT_MAN) {
             if ((data & DCC_CV_DIRECT_BIT_RES_MASK)  == DCC_CV_DIRECT_BIT_RES_VALUE) {
-                if ((data & DCC_CV_DIRECT_BIT_MODE_MASK) == DCC_CV_DIRECT_BIT_MODE_VER) {
-                    uint8_t bit = data & DCC_CV_DIRECT_BIT_BITS_MASK;
+                uint8_t bit = data & DCC_CV_DIRECT_BIT_BITS_MASK;
+                uint8_t value = cv_read(cv);
 
-            send_serial_0_str("DBITV:");
-            uint16_to_string(cv, str);
-            send_serial_0_str(str);
-            send_serial_0(' ');
-            uint8_to_string(bit, str);
-            send_serial_0_str(str);
-            send_serial_0(' ');
+                if ((data & DCC_CV_DIRECT_BIT_MODE_MASK) == DCC_CV_DIRECT_BIT_MODE_VER) {
 
                     if ((0x05 & _BV(bit)) == _BV(bit)) {
                         send_ack();
-                        send_serial_0('1');
-                    } else {
-                        send_serial_0('0');
-                    }
-
-                    send_serial_0('\n');
+                    } 
                 } else {
-
+                    value = value | _BV(bit);
+                    if (cv_write(cv, value)) {
+                        send_ack();
+                    }
                 }
             }
 
@@ -288,13 +272,37 @@ inline bool handle_service_packet(uint8_t addr_byte) {
     } else
     if (packet_len == DCC_CV_PHYSICAL_REG_MODE_LEN &&
         ((addr_byte & DCC_CV_PHYSICAL_REG_MASK) == DCC_CV_PHYSICAL_REG)) {
+        uint16_t reg = addr_byte & DCC_CV_PHYSICAL_REG;
+        uint16_t page = cv_read(CV_REG_PAGE_REGISTER);
+        uint16_t cv = 0;
+
+        switch (reg) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+                cv = ((page - 1) * 4) + reg + 1;
+                break;
+            case 4:
+                cv = CV_REG_CONFIGURATION;
+                break;
+            default:
+                cv = ((uint16_t)reg) + 1;
+                break;
+        }
 
         if ((addr_byte & DCC_CV_DIRECT_MODE_MASK) == DCC_CV_DIRECT_VERIFY) {
-            DEBUG_PRINT_PACKET("PHYSV:");
+            if (data == cv_read(cv)) {
+                send_ack();
+            }
+
             return true;
         } else
         if ((addr_byte & DCC_CV_DIRECT_MODE_MASK) == DCC_CV_DIRECT_WRITE) {
-            DEBUG_PRINT_PACKET("PHYSW:");
+            if (cv_write(cv, data)) {
+                send_ack();
+            }
+
             return true;
         }
     }
@@ -334,7 +342,7 @@ static void loop() {
                     switch (decoder_state) {
                         case DECODER_STATE_OPERATIONAL:
                             DEBUG_PRINT("OPERATIONAL:\n");
-                            handle_oper_packet(addr_byte);
+                            handle_oper_packet(cv_get_dcc_addr(), addr_byte);
                             break;
                         case DECODER_STATE_RESET:
                             // A Digital Decoder will enter service mode upon
@@ -346,7 +354,7 @@ static void loop() {
                                 decoder_state = DECODER_STATE_SERVICE;
                             } else {
                                 decoder_state = DECODER_STATE_OPERATIONAL;
-                                handle_oper_packet(addr_byte);
+                                handle_oper_packet(cv_get_dcc_addr(), addr_byte);
                             }
                             break;
                         case DECODER_STATE_SERVICE:
@@ -383,7 +391,7 @@ static void loop() {
                             // packets and NEVER set for service mode packets
                             // which makes this easy
                             DEBUG_PRINT("NOT SERVICE:");
-                            if (handle_oper_packet(addr_byte)) {
+                            if (handle_oper_packet(cv_get_dcc_addr(), addr_byte)) {
                                 decoder_state = DECODER_STATE_OPERATIONAL;
                             }
                             break;
