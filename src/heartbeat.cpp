@@ -26,13 +26,23 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define MS_DELAY 1000
 
-uint16_t count = 0;
-bool led_on = false;
+volatile uint16_t count_ms = 0;
+
+#ifdef HEARTBEAT_LED
+static volatile uint16_t count = 0;
+static volatile bool led_on = false;
+#endif
 
 ISR (TIMER0_COMPA_vect) {
     TCNT0 = 0;
     TIFR0 = TIFR0 | _BV(OCR0A);
+
+    count_ms++;
+
+#ifdef HEARTBEAT_LED
     count++;
+
+    // Half a second
     if (count >= 500) {
         count = 0;
         if (led_on) {
@@ -43,20 +53,23 @@ ISR (TIMER0_COMPA_vect) {
         PORTB = PORTB | _BV(PORTB5);
         }
     }
+#endif
 }
 
-void init_timer_0() {
-    // Divide by 256
-    TCCR0B = _BV(CS02);
+void init_heartbeat() {
+    // Divide by 64
+    TCCR0B = _BV(CS01) | _BV(CS00);
     // Set timer to 0
     TCNT0 = 0;
-    // Interrupt every 2ms
-    OCR0A = 125;
+    // Interrupt every 1ms
+    OCR0A = 250;
     // Enable OC0A interrupt
     TIMSK0 |= _BV(OCIE0A);
 }
 
+#ifdef HEARTBEAT_LED
 void init_builtin_led(void) {
     DDRB = DDRB | _BV(DDB5);
     PORTB = PORTB | _BV(PORTB5);
 }
+#endif

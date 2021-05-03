@@ -54,10 +54,10 @@ void init_serial_0() {
     // (F_CPU / 4 / 115200 - 1) / 2 = 16
     // (F_CPU / 8 / 9600 - 1) / 2 = 103
     UBRR0H = 0;
-    UBRR0L = 103;
+    UBRR0L = 16;
 
     // Double speed
-    //UCSR0A = UCSR0A | _BV(U2X0);
+    UCSR0A = UCSR0A | _BV(U2X0);
 
     // Bits, parity and stop
     UCSR0C = _BV(UCSZ00) | _BV(UCSZ01);
@@ -110,7 +110,6 @@ void send_serial_0_str(const char * str) {
     for (const char *pc = str; *pc; pc++) {
         send_serial_0((uint8_t)*pc);
     }
-    _delay_ms(0);
 }
 
 static char nybble_to_hex(uint8_t nybble) {
@@ -122,6 +121,14 @@ static char nybble_to_hex(uint8_t nybble) {
 }
 
 void uint8_to_string(uint8_t value, char * str) {
+    *str++ = nybble_to_hex((value & 0x00f0) >> 4);
+    *str++ = nybble_to_hex((value & 0x000f) >> 0);
+    *str++ = 0;
+}
+
+void uint16_to_string(uint16_t value, char * str) {
+    *str++ = nybble_to_hex((value & 0xf000) >> 12);
+    *str++ = nybble_to_hex((value & 0x0f00) >> 8);
     *str++ = nybble_to_hex((value & 0x00f0) >> 4);
     *str++ = nybble_to_hex((value & 0x000f) >> 0);
     *str++ = 0;

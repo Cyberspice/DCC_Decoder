@@ -98,7 +98,8 @@ static inline bool process_bit(bool bit_is_1) {
                    detect that! */
                 packet_state = DCC_PACKET_STATE_DONE;
 
-                PORTB = PORTB & ~_BV(PB2);
+                /* For debug */
+                PORTB = PORTB | _BV(PB2);
 
                 // Disable interrupts
                 TIMSK1 = 0;
@@ -267,7 +268,7 @@ void dccrx_init(void) {
 
 void dccrx_start(void) {
     /* For debug */
-    PORTB = PORTB | _BV(PB2);
+    PORTB = PORTB & ~_BV(PB2);
 
     /* Reset the state machine */
     reset_states();
@@ -282,6 +283,9 @@ void dccrx_start(void) {
 void dccrx_stop(void) {
     /* Just disable the interrupts */
     TIMSK1 = 0;
+
+    /* For debug */
+    PORTB = PORTB | _BV(PB2);
 }
 
 bool dccrx_isvalid(uint8_t data[], uint8_t len) {

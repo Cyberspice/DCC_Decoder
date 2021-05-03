@@ -66,6 +66,19 @@ void send_serial_0_str(const char * str);
  */
 void uint8_to_string(uint8_t value, char * str);
 
+/**
+ * \brief Utility function that converts a uint16_t value to a hex string
+ *
+ * This function populates the supplied buffer with the ASCII hex
+ * representation of the supplied value. The buffer must be large enough
+ * to hold two characters and a terminating NUL byte, i.e. 5 characters
+ * long.
+ *
+ * \param value the value
+ * \param str the string buffer
+ */
+void uint16_to_string(uint16_t value, char * str);
+
 #ifdef __cplusplus
 }
 #endif

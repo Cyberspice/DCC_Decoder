@@ -63,33 +63,103 @@ typedef struct {
     uint8_t packet[DCC_MAX_PACKET_LEN];
 } DCC_PACKET_DATA;
 
-#define DCC_BYTE_IDX_ADDRESS      0
-#define DCC_BYTE_IDX_INSTRUCTION  1
+#define DCC_BYTE_IDX_ADDRESS             0
+#define DCC_BYTE_IDX_INSTRUCTION         1
 
-#define DCC_ADDRESS_BROADCAST     0x00
-#define DCC_ADDRESS_7BIT_MASK     0x7f
-#define DCC_ADDRESS_ACCESSORY     0x80
-#define DCC_ADDRESS_ACC_BROADCAST 0xbf
-#define DCC_ADDRESS_MULTI_FUNC    0xc0
-#define DCC_ADDRESS_EXTENDED_MASK 0xc0
-#define DCC_ADDRESS_IDLE          0xff
+#define DCC_ADDRESS_BROADCAST         0x00
+#define DCC_ADDRESS_7BIT_MASK         0x7f
+#define DCC_ADDRESS_ACCESSORY         0x80
+#define DCC_ADDRESS_ACCESSORY_MASK    0xc0
+#define DCC_ADDRESS_MULTI_FUNC        0xc0
+#define DCC_ADDRESS_MULTI_FUNC_MASK   0xc0
+#define DCC_ADDRESS_IDLE              0xff
+
+#define DCC_BROADCAST_LEN                3
+#define DCC_IDLE_LEN                     3
 
 /* For loco (multifunction) decoders */
-#define DCC_INSTRUCTION_CONTROL   0x00
-#define DCC_INSTRUCTION_ADVANCED  0x20
-#define DCC_INSTRUCTION_FWD       0x40
-#define DCC_INSTRUCTION_REV       0x60
-#define DCC_INSTRUCTION_FUNC_1    0x80
-#define DCC_INSTRUCTION_FUNC_2    0xa0
-#define DCC_INSTRUCTION_RESERVED  0xc0
-#define DCC_INSTRUCTION_CV        0xe0
-#define DCC_INSTRUCTION_TYPE_MASK 0xe0
-#define DCC_INSTRUCTION_DATA_MASK 0x1f
+#define DCC_INSTRUCTION_CONTROL       0x00
+#define DCC_INSTRUCTION_ADVANCED      0x20
+#define DCC_INSTRUCTION_FWD           0x40
+#define DCC_INSTRUCTION_REV           0x60
+#define DCC_INSTRUCTION_FUNC_1        0x80
+#define DCC_INSTRUCTION_FUNC_2        0xa0
+#define DCC_INSTRUCTION_RESERVED      0xc0
+#define DCC_INSTRUCTION_CV            0xe0
+#define DCC_INSTRUCTION_TYPE_MASK     0xe0
+#define DCC_INSTRUCTION_DATA_MASK     0x1f
 
 /* For accessory decoders */
-#define DCC_ACC_BROADCAST_BASIC   0x80
-#define DCC_ACC_BROADCAST_MASK    0xf0
-#define DCC_ACC_BROADCAST_ADV     0x07
+#define DCC_ACC_ADDRESS_MASK_LOW      0x3f
+#define DCC_ACC_BASIC_PACKET_BIT      0x80
+#define DCC_ACC_ADDRESS_MASK_HIGH     0x70
+#define DCC_ACC_STATE_BIT             0x08
+#define DCC_ACC_OUTPUT_MASK           0x07
+
+#define DCC_ACC_BASIC_LEN                3
+#define DCC_ACC_BROADCAST_ADDRESS   0x003f
+
+/* For CV programming / reading in service mode */
+#define DCC_CV_DIRECT_MASK            0xf0
+#define DCC_CV_DIRECT                 0x70
+#define DCC_CV_DIRECT_MODE_MASK       0x0c
+#define DCC_CV_DIRECT_RES             0x00
+#define DCC_CV_DIRECT_VERIFY          0x04
+#define DCC_CV_DIRECT_BIT_MAN         0x08
+#define DCC_CV_DIRECT_WRITE           0x0c
+#define DCC_CV_DIRECT_ADDR_HIGH_MASK  0x03
+
+#define DCC_CV_DIRECT_BIT_RES_MASK    0xe0
+#define DCC_CV_DIRECT_BIT_RES_VALUE   0xe0
+#define DCC_CV_DIRECT_BIT_MODE_MASK   0x10
+#define DCC_CV_DIRECT_BIT_MODE_VER    0x00
+#define DCC_CV_DIRECT_BIT_MODE_WRITE  0x10
+#define DCC_CV_DIRECT_BIT_BITS_MASK   0x07
+
+#define DCC_CV_DIRECT_MODE_LEN           4
+
+// Address only is basically deprecated and superceded
+// by physical register addressing. In fact the packet
+// for handling the address CV in physical addressing
+// mode is identify. These are here for completeness.
+#define DCC_CV_ADDRESS_ONLY_MASK      0xf7
+#define DCC_CV_ADDRESS_ONLY           0x77
+#define DCC_CV_ADDRESS_ONLY_MODE_MASK 0x08
+#define DCC_CV_ADDRESS_ONLY_READ      0x00
+#define DCC_CV_ADDRESS_ONLY_WRITE     0x08
+#define DCC_CV_ADDRESS_ONLY_ADDR_BIT7 0x80
+#define DCC_CV_ADDRESS_ONLY_ADDR_MASK 0x7f
+
+#define DCC_CV_ADDRESS_MODE_LEN          3
+
+#define DCC_CV_PHYSICAL_REG_MASK      0xf0
+#define DCC_CV_PHYSICAL_REG           0x70
+#define DCC_CV_PHYSICAL_REG_MODE_MASK 0x08
+#define DCC_CV_PHYSICAL_REG_READ      0x00
+#define DCC_CV_PHYSICAL_REG_WRITE     0x08
+#define DCC_CV_PHYSICAL_REG_REG_MASK  0x07
+#define DCC_CV_PHYSICAL_REG_ADDRESS   0x00
+
+// 0x01 to 0x09 are manufacturer specific for accessory decoders
+
+#define DCC_CV_PHYSICAL_REG_VERSION   0x06
+#define DCC_CV_PHYSICAL_REG_MAN_ID    0x07
+
+#define DCC_CV_PHYSICAL_REG_MODE_LEN     3
+
+/* For CV programming / reading in operational mode */
+#define DCC_CV_SHORT_FORM_BIT         0x10
+#define DCC_CV_SHORT_MASK             0x0f
+#define DCC_CV_SHORT_RESERVED         0x00
+#define DCC_CV_SHORT_ACC              0x02
+#define DCC_CV_SHORT_DEC              0x03
+#define DCC_CV_SHORT_OTHER            0x09
+#define DCC_CV_LONG_MODE_MASK         0x0c
+#define DCC_CV_LONG_RESERVED          0x00
+#define DCC_CV_LONG_VERIFY            0x04
+#define DCC_CV_LONG_BIT_MAN           0x08
+#define DCC_CV_LONG_WRITE             0x0c
+#define DCC_CV_LONG_ADDR_HIGH_MASK    0x03
 
 #ifdef __cplusplus
 }

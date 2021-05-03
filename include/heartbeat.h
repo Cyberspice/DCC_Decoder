@@ -22,13 +22,19 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef __HEARTBEAT_H
 #define __HEARTBEAT_H
 
+#define HEARTBEAT_LED 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void init_timer_0();
+extern volatile uint16_t count_ms;
 
+void init_heartbeat();
+
+#ifdef HEARTBEAT_LED
 void init_builtin_led(void);
+#endif
 
 #ifdef __cplusplus
 }
