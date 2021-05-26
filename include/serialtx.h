@@ -24,9 +24,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <stdint.h>
 
-// Uncomment to use interrupts for serial TX.
-// #define SERIALTX_USE_INT
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -52,6 +49,15 @@ void send_serial_0(uint8_t c);
  * \param str the string
  */
 void send_serial_0_str(const char * str);
+
+/** \brief Abstract the init function */
+#define init_serial init_serial_0
+
+/** \brief Abstract the send serial function */
+#define send_serial send_serial_0
+
+/** \brief Abstract the send serial str function */
+#define send_serial_str send_serial_0_str
 
 /**
  * \brief Utility function that converts a uint8_t value to a hex string
