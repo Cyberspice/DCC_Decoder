@@ -45,6 +45,9 @@ ISR (TIMER0_COMPA_vect) {
     }
 }
 
+/**
+ * \brief Initialise timer 0 as a 1 millisecond timer
+ */
 void init_timer_0() {
     // Divide by 256
     TCCR0B = _BV(CS02);
@@ -56,6 +59,9 @@ void init_timer_0() {
     TIMSK0 |= _BV(OCIE0A);
 }
 
+/**
+ * \brief Initialise the built in LED as a heartbeat
+ */
 void init_builtin_led(void) {
     DDRB = DDRB | _BV(DDB5);
     PORTB = PORTB | _BV(PORTB5);

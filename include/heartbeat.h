@@ -26,8 +26,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 extern "C" {
 #endif
 
+/**
+ * \brief Initialise timer 0 as a 1 millisecond timer
+ */
 void init_timer_0();
 
+/**
+ * \brief Initialise the built in LED as a heartbeat
+ */
 void init_builtin_led(void);
 
 #ifdef __cplusplus
