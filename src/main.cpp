@@ -37,16 +37,18 @@ static void init_diag_led(void) {
 }
 
 void setup() {
+#ifdef HEARTBEAT_ENABLE
     init_builtin_led();
     init_timer_0();
-    init_serial_0();
+#endif
+    init_serial();
     dccrx_init();
     init_diag_led();
 
     /* Configure sleep */
     set_sleep_mode(SLEEP_MODE_IDLE);
 
-    send_serial_0_str("DCC code 0.05\n");
+    send_serial_str("SNIF V0.05\n");
     dccrx_start();
 }
 
@@ -58,41 +60,23 @@ uint8_t prev_packet_len = 0;
 void print_packet() {
     for (uint8_t i = 0; i < prev_packet_len; i++) {
         uint8_to_string(prev_packet[i], str);
-        send_serial_0_str(str);
-        send_serial_0(' ');
+        send_serial_str(str);
     }
-    send_serial_0('\n');
+    send_serial('\n');
 }
 
 void loop() {
     if (packet_len > 0) {
-        bool different = false;
-
-        /* Different packet if different length or different bytes */
-        if (packet_len != prev_packet_len) {
-            different = true;
-        } else {
-            for (uint8_t i = 0; i < packet_len; i++) {
-                if (packet_data[i] != prev_packet[i]) {
-                    different = true;
-                    break;
-                }
-            }
-        }
-
-        /* Copy if different */
-        if (different) {
-            prev_packet_len = packet_len;
-            for (uint8_t i = 0; i < packet_len; i++) {
-                prev_packet[i] = packet_data[i];
-            }
+        prev_packet_len = packet_len;
+        for (uint8_t i = 0; i < packet_len; i++) {
+            prev_packet[i] = packet_data[i];
         }
 
         /* Start collecting next one */
         dccrx_start();
 
         /* Print current one */
-        if (different) {
+        if (dccrx_isvalid(prev_packet, prev_packet_len)) {
             print_packet();
         }
     }

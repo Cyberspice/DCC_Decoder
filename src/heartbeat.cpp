@@ -24,6 +24,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <avr/interrupt.h>
 #include "heartbeat.h"
 
+#ifdef HEARTBEAT_ENABLE
+
 #define MS_DELAY 1000
 
 uint16_t count = 0;
@@ -66,3 +68,5 @@ void init_builtin_led(void) {
     DDRB = DDRB | _BV(DDB5);
     PORTB = PORTB | _BV(PORTB5);
 }
+
+#endif
