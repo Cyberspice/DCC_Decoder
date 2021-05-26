@@ -31,10 +31,10 @@ extern "C" {
 
 #define ICP1_DEBUG
 
-/** The packet data */
+/** \brief The packet data */
 extern uint8_t packet_data[];
 
-/** The packet length. This is set at the end of the packet */
+/** \brief The packet length. This is set at the end of the packet */
 extern volatile uint8_t packet_len;
 
 /**

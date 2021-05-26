@@ -45,7 +45,7 @@ extern "C" {
 #define BIT0_WIDTH_TICKS       200
 #define BIT0_WIDTH_MAX_TICKS 20000
 
-/** The packet state during reading or writing */
+/** \brief The packet state during reading or writing */
 typedef enum {
     DCC_PACKET_STATE_UNKNOWN,
     DCC_PACKET_STATE_PREAMBLE,
@@ -57,7 +57,7 @@ typedef enum {
 
 #define DCC_MAX_PACKET_LEN 6
 
-/** A single packet with length and data */
+/** \brief A single packet with length and data */
 typedef struct {
     uint8_t len;
     uint8_t packet[DCC_MAX_PACKET_LEN];
